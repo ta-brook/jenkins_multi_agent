@@ -1,9 +1,18 @@
 # LOCAL-ONLY test harness (never for production).
 # Spins up: 1 Jenkins controller (JCasC from repo) + 2 Docker-in-Docker "hosts"
-# that act as the project's two workers. Copy .env.example to .env and edit.
+# that act as the project's two workers + a local registry. Copy .env.example
+# to .env and edit; then `./jenkins/agents/build-agent-images.sh`.
 name: jenkins-multi-agent
 
 services:
+  registry:
+    image: registry:2
+    container_name: registry
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry-data:/var/lib/registry
+
   controller:
     build:
       context: ../controller
@@ -13,6 +22,9 @@ services:
       CASC_JENKINS_CONFIG: /var/jenkins_home/casc
       JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
       JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:-admin}
+      # Optional HTTPS. See ../security/gen-controller-keystore.sh. Example:
+      # JENKINS_OPTS="--httpsPort=8443 --httpsKeyStore=/var/jenkins_home/https/keystore.p12 --httpsKeyStorePassword=..."
+      JENKINS_OPTS: ${JENKINS_OPTS:-}
       GIT_REPO_URL: ${GIT_REPO_URL}
       DOCKER_HOST_A_URI: ${DOCKER_HOST_A_URI:-tcp://docker-host-a:2375}
       DOCKER_HOST_B_URI: ${DOCKER_HOST_B_URI:-tcp://docker-host-b:2375}
@@ -20,6 +32,8 @@ services:
       DOCKER_HOST_A_PASSWORD: ${DOCKER_HOST_A_PASSWORD:-}
       DOCKER_HOST_B_USERNAME: ${DOCKER_HOST_B_USERNAME:-}
       DOCKER_HOST_B_PASSWORD: ${DOCKER_HOST_B_PASSWORD:-}
+      REGISTRY_URL: ${REGISTRY_URL:-http://registry:5000}
+      REGISTRY_HOST: ${REGISTRY_HOST:-registry:5000}
       REGISTRY_USERNAME: ${REGISTRY_USERNAME:-}
       REGISTRY_PASSWORD_DEV: ${REGISTRY_PASSWORD_DEV:-}
       REGISTRY_PASSWORD_STAGING: ${REGISTRY_PASSWORD_STAGING:-}
@@ -27,19 +41,22 @@ services:
       DEPLOY_TOKEN_DEV: ${DEPLOY_TOKEN_DEV:-}
       DEPLOY_TOKEN_STAGING: ${DEPLOY_TOKEN_STAGING:-}
       DEPLOY_TOKEN_PROD: ${DEPLOY_TOKEN_PROD:-}
-      AGENT_IMAGE_TOOL_BUILD: ${AGENT_IMAGE_TOOL_BUILD:-jenkins/inbound-agent:latest}
-      AGENT_IMAGE_DEV: ${AGENT_IMAGE_DEV:-jenkins/inbound-agent:latest}
-      AGENT_IMAGE_STAGING: ${AGENT_IMAGE_STAGING:-jenkins/inbound-agent:latest}
-      AGENT_IMAGE_PROD: ${AGENT_IMAGE_PROD:-jenkins/inbound-agent:latest}
+      AGENT_IMAGE_TOOL_BUILD: ${AGENT_IMAGE_TOOL_BUILD:-registry:5000/jenkins-multi-agent/tool-build:latest}
+      AGENT_IMAGE_DEV: ${AGENT_IMAGE_DEV:-registry:5000/jenkins-multi-agent/tool-deploy:latest}
+      AGENT_IMAGE_STAGING: ${AGENT_IMAGE_STAGING:-registry:5000/jenkins-multi-agent/tool-deploy:latest}
+      AGENT_IMAGE_PROD: ${AGENT_IMAGE_PROD:-registry:5000/jenkins-multi-agent/tool-deploy:latest}
     volumes:
       - ../controller/casc:/var/jenkins_home/casc:ro
+      - ./https:/var/jenkins_home/https:ro
       - jenkins_home:/var/jenkins_home
     ports:
       - "8080:8080"
+      - "8443:8443"
       - "50000:50000"
     depends_on:
       - docker-host-a
       - docker-host-b
+      - registry
 
   docker-host-a:
     image: docker:dind
@@ -47,7 +64,10 @@ services:
     privileged: true
     environment:
       DOCKER_TLS_CERTDIR: ""
-    command: ["dockerd", "--host=tcp://0.0.0.0:2375"]
+    command:
+      - dockerd
+      - --host=tcp://0.0.0.0:2375
+      - --insecure-registry=registry:5000
     volumes:
       - host-a-data:/var/lib/docker
     ports:
@@ -59,7 +79,10 @@ services:
     privileged: true
     environment:
       DOCKER_TLS_CERTDIR: ""
-    command: ["dockerd", "--host=tcp://0.0.0.0:2375"]
+    command:
+      - dockerd
+      - --host=tcp://0.0.0.0:2375
+      - --insecure-registry=registry:5000
     volumes:
       - host-b-data:/var/lib/docker
     ports:
@@ -69,3 +92,4 @@ volumes:
   jenkins_home:
   host-a-data:
   host-b-data:
+  registry-data:

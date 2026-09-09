@@ -2,7 +2,7 @@
 # The top-level pipeline job expects a Jenkinsfile in the SCM repo (Phase 4);
 # until that file exists the job will fail on first build, by design.
 jobs:
-  - script: >
+  - script: |
       pipelineJob('jenkins_multi_agent-main') {
         description('Top-level multi-env pipeline: build once, promote dev -> staging -> prod.')
         logRotator(-1, 20, -1, 5)
@@ -20,6 +20,29 @@ jobs:
               }
             }
             lightweight(true)
+          }
+        }
+        // Config-as-code trigger: SCM polling. A webhook (e.g. GitHub) needs
+        // the controller URL + credentials, configured once the controller is live.
+        triggers {
+          scm('H/2 * * * *')
+        }
+      }
+  - script: |
+      pipelineJob('smoke-docker-build') {
+        description('Smoke test: runs on an ephemeral docker-build agent and cleans up after itself.')
+        definition {
+          cps {
+            script('''
+              pipeline {
+                agent { label 'docker-build' }
+                stages {
+                  stage('Smoke') {
+                    steps { sh 'echo "smoke ok on \$(hostname)"' }
+                  }
+                }
+              }
+            '''.stripIndent())
           }
         }
       }
