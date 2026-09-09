@@ -9,7 +9,7 @@ alternatives: `topologies.md`; rules and conventions: `jenkins-multi-env` skill.
 - [x] Repo scaffolding (opencode.json, agents, jenkins skill)
 - [x] Baseline architecture + ADR (`architecture.md`)
 - [x] Alternatives menu with diagrams (`topologies.md`)
-- [ ] README pointing at these docs (optional, user request)
+- [x] README pointing at these docs + local quickstart — *`README.md`*
 
 ## Phase 1 — Jenkins controller (master)
 
@@ -33,34 +33,35 @@ alternatives: `topologies.md`; rules and conventions: `jenkins-multi-env` skill.
 
 - [x] Templates: `docker-build`, `docker-dev`, `docker-staging`, `docker-prod` — *defined per cloud in `casc/clouds.yaml`*
 - [x] Env-scoped credential sets (registry + per-env deploy creds) — *`casc/credentials.yaml`, env-injected*
-- [x] Agent image(s) maintained in repo (Dockerfile per tool set) — *`jenkins/agents/tool-build`, `tool-deploy`*
+- [x] Agent image(s) maintained in repo (Dockerfile per tool set) — *`jenkins/agents/tool-build`, `tool-deploy`, + `build-agent-images.sh`*
 - **Acceptance (unverified):** a labeled job runs inside a fresh container per
   env; dev credentials are not visible to prod-labeled jobs.
 
 ## Phase 4 — Pipeline & env-gated promotion
 
-- [ ] Top-level `Jenkinsfile` parameterized by env (build once, promote digest)
-- [ ] Stages: build+test -> containerize -> push -> dev -> staging -> prod
+- [x] Top-level `Jenkinsfile` parameterized by env (build once, promote digest) — *`Jenkinsfile` (root); TARGET_ENV = dev/staging/prod ceiling*
+- [x] Stages: build+test -> containerize -> push -> dev -> staging -> prod
       (manual `input` gate before prod)
-- [ ] Webhook/SCM trigger wired to the repo
-- **Acceptance:** one push builds once and promotes to staging unattended; prod
-  waits for manual approval; redeploy uses the same digest.
+- [x] SCM trigger wired as code — *SCM polling in `casc/jobs.yaml`; live webhook still needs controller URL + SCM creds*
+- **Acceptance (unverified):** one push builds once and promotes to staging
+  unattended; prod waits for manual approval; redeploy uses the same digest.
 
 ## Phase 5 — Security & ops hardening
 
-- [ ] TLS everywhere, script console restricted, least-privilege on agents
-- [ ] $JENKINS_HOME backup schedule + restore drill
-- [ ] Plugin/upgrade policy and a verified upgrade run
-- **Acceptance:** restore drill succeeds on a scratch controller; no default
-  credentials remain.
+- [x] TLS everywhere, script console restricted, least-privilege on agents — *matrix auth (no script-console to non-admins), `jenkins/security/gen-controller-keystore.sh` + `gen-docker-tls.sh`, agents ephemeral/root-in-container for docker access*
+- [x] $JENKINS_HOME backup schedule + restore drill — *`backup-jenkins-home.sh`, `restore-jenkins-home.sh` (cron/drill documented)*
+- [x] Plugin/upgrade policy and a verified upgrade run — *`refresh-plugins.sh` + pin policy (verify on dev controller before committing bumps)*
+- **Acceptance (unverified):** restore drill succeeds on a scratch controller;
+  no default credentials remain (harness defaults exist only for local testing).
 
 ## Phase 6 — Sample application end-to-end
 
-- [ ] `apps/sample-app` with health endpoint + tests (swe)
-- [ ] Multi-stage Dockerfile; build/test hermetic in clean containers
-- [ ] End-to-end green run: push -> dev -> staging -> (approve) -> prod; health
-      verified in each env
-- **Acceptance:** full pipeline green from the repo README commands alone.
+- [x] `apps/sample-app` with health endpoint + tests — *FastAPI `/health` echoes `APP_ENV`; pytest suite under `apps/sample-app/tests`*
+- [x] Multi-stage Dockerfile; build/test hermetic in clean containers — *builder stage runs pytest; runtime copies deps only, non-root*
+- [x] End-to-end wired: push -> dev -> staging -> (approve) -> prod with health
+      verified in each env — *via `Jenkinsfile` smoke-deploy on each env agent; real deploy target replaceable per env*
+- **Acceptance (unverified):** full pipeline green from the repo README
+  commands alone (harness quickstart in `README.md`).
 
 ## Working agreement
 

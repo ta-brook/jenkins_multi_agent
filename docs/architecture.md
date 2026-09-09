@@ -88,7 +88,13 @@ New decisions are appended to the ADR log in section 6 below.
 | 2026-09-09 | "Workers" = two Docker-plugin clouds (`docker-host-a`/`docker-host-b`), one per always-on Docker host; both clouds carry the same 4 env-labeled templates (`docker-build/dev/staging/prod`) | Phase 2/3; this resolves the ambiguous skill example — cloud-per-host (not controller node-per-host) is the Method-4 baseline: the controller provisions ephemeral containers on each host by label. |
 | 2026-09-09 | Env boundary is the template label; credential isolation is per env ID (`registry-*`, `deploy-*`), values env-injected | Phase 3; prod credentials exist as separate IDs and are never bound to dev/staging-labeled jobs. |
 | 2026-09-09 | Docker hosts speak TLS on TCP 2376 in production (`docker-host.sh`), plain 2375 only in the local `dev-harness` compose stack | Phase 2; host provisioning is a repo script; harness is local-only. |
+| 2026-09-09 | One top-level `Jenkinsfile`, parameterized by promotion ceiling (`TARGET_ENV`); build+test and containerize on `docker-build`, then env-gated `Deploy dev/staging/prod` stages each on their env label; manual `input` gate before prod | Phase 4; immutable image tag = git short SHA; SCM polling trigger as code (webhook needs a live controller URL + SCM credentials to wire). |
+| 2026-09-09 | Agent templates bind-mount the Docker socket and run as root so pipeline stages can `docker build/pull/run` against the same host daemon; containers are ephemeral | Phase 3/4 decision; standard for docker-plugin build agents; containers are destroyed after the job. |
+| 2026-09-09 | Local `dev-harness` includes an insecure `registry:5000` service and both DinD hosts trust it; `REGISTRY_HOST` env points images at it | Phase 4; the same image digest then flows dev->staging->prod. Production registry choice still open. |
+| 2026-09-09 | `apps/sample-app` = FastAPI with `/health` echoing `APP_ENV`; multi-stage Dockerfile runs tests in the builder then copies only runtime deps | Phase 6; env-aware seam so one image runs identically per env, verifiable via the health endpoint. |
+| 2026-09-09 | Security & ops scripts under `jenkins/security/`: HTTPS keystore gen, Docker-TLS client/server certs, `$JENKINS_HOME` backup/restore, plugin-pin refresh | Phase 5; backups/restore drill + upgrade policy live as repo scripts and ADRs until acceptance is verified. |
 
-Remaining future ADRs: registry choice (provider + URL), deploy target/port per
-env (deferred to Phase 4+), backup schedule/restore drill (Phase 5), any move
-toward static agents / K8s / per-env controllers.
+Remaining future ADRs: registry provider/URL (production), real deploy target
+per env (replace the smoke-deploy in the Jenkinsfile), backup schedule/restore
+drill sign-off (Phase 5), any move toward static agents / K8s / per-env
+controllers.
