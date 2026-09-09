@@ -1,0 +1,71 @@
+# LOCAL-ONLY test harness (never for production).
+# Spins up: 1 Jenkins controller (JCasC from repo) + 2 Docker-in-Docker "hosts"
+# that act as the project's two workers. Copy .env.example to .env and edit.
+name: jenkins-multi-agent
+
+services:
+  controller:
+    build:
+      context: ../controller
+      dockerfile: Dockerfile
+    container_name: jenkins-controller
+    environment:
+      CASC_JENKINS_CONFIG: /var/jenkins_home/casc
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:-admin}
+      GIT_REPO_URL: ${GIT_REPO_URL}
+      DOCKER_HOST_A_URI: ${DOCKER_HOST_A_URI:-tcp://docker-host-a:2375}
+      DOCKER_HOST_B_URI: ${DOCKER_HOST_B_URI:-tcp://docker-host-b:2375}
+      DOCKER_HOST_A_USERNAME: ${DOCKER_HOST_A_USERNAME:-}
+      DOCKER_HOST_A_PASSWORD: ${DOCKER_HOST_A_PASSWORD:-}
+      DOCKER_HOST_B_USERNAME: ${DOCKER_HOST_B_USERNAME:-}
+      DOCKER_HOST_B_PASSWORD: ${DOCKER_HOST_B_PASSWORD:-}
+      REGISTRY_USERNAME: ${REGISTRY_USERNAME:-}
+      REGISTRY_PASSWORD_DEV: ${REGISTRY_PASSWORD_DEV:-}
+      REGISTRY_PASSWORD_STAGING: ${REGISTRY_PASSWORD_STAGING:-}
+      REGISTRY_PASSWORD_PROD: ${REGISTRY_PASSWORD_PROD:-}
+      DEPLOY_TOKEN_DEV: ${DEPLOY_TOKEN_DEV:-}
+      DEPLOY_TOKEN_STAGING: ${DEPLOY_TOKEN_STAGING:-}
+      DEPLOY_TOKEN_PROD: ${DEPLOY_TOKEN_PROD:-}
+      AGENT_IMAGE_TOOL_BUILD: ${AGENT_IMAGE_TOOL_BUILD:-jenkins/inbound-agent:latest}
+      AGENT_IMAGE_DEV: ${AGENT_IMAGE_DEV:-jenkins/inbound-agent:latest}
+      AGENT_IMAGE_STAGING: ${AGENT_IMAGE_STAGING:-jenkins/inbound-agent:latest}
+      AGENT_IMAGE_PROD: ${AGENT_IMAGE_PROD:-jenkins/inbound-agent:latest}
+    volumes:
+      - ../controller/casc:/var/jenkins_home/casc:ro
+      - jenkins_home:/var/jenkins_home
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    depends_on:
+      - docker-host-a
+      - docker-host-b
+
+  docker-host-a:
+    image: docker:dind
+    container_name: docker-host-a
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    command: ["dockerd", "--host=tcp://0.0.0.0:2375"]
+    volumes:
+      - host-a-data:/var/lib/docker
+    ports:
+      - "12375:2375"
+
+  docker-host-b:
+    image: docker:dind
+    container_name: docker-host-b
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    command: ["dockerd", "--host=tcp://0.0.0.0:2375"]
+    volumes:
+      - host-b-data:/var/lib/docker
+    ports:
+      - "22375:2375"
+
+volumes:
+  jenkins_home:
+  host-a-data:
+  host-b-data:

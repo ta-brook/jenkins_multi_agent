@@ -1,0 +1,139 @@
+# Docker-plugin clouds: one per always-on Docker host (the project's "workers").
+# Each cloud carries the SAME four env-labeled agent templates.
+# Env boundary = the label; a template's label is unique to one environment.
+# Images come from env so the harness (local DinD) and real hosts can differ.
+jenkins:
+  clouds:
+    - docker:
+        name: "docker-host-a"
+        dockerApi:
+          dockerHost:
+            uri: "${DOCKER_HOST_A_URI}"
+            credentialsId: "docker-host-a"
+          connectTimeout: 30
+          readTimeout: 60
+        containerCap: 10
+        templates:
+          - name: "docker-build"
+            labelString: "docker-build"
+            mode: EXCLUSIVE
+            instanceCap: 2
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_TOOL_BUILD}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+          - name: "docker-dev"
+            labelString: "docker-dev"
+            mode: EXCLUSIVE
+            instanceCap: 2
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_DEV}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+          - name: "docker-staging"
+            labelString: "docker-staging"
+            mode: EXCLUSIVE
+            instanceCap: 2
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_STAGING}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+          - name: "docker-prod"
+            labelString: "docker-prod"
+            mode: EXCLUSIVE
+            instanceCap: 1
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_PROD}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+
+    - docker:
+        name: "docker-host-b"
+        dockerApi:
+          dockerHost:
+            uri: "${DOCKER_HOST_B_URI}"
+            credentialsId: "docker-host-b"
+          connectTimeout: 30
+          readTimeout: 60
+        containerCap: 10
+        templates:
+          - name: "docker-build"
+            labelString: "docker-build"
+            mode: EXCLUSIVE
+            instanceCap: 2
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_TOOL_BUILD}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+          - name: "docker-dev"
+            labelString: "docker-dev"
+            mode: EXCLUSIVE
+            instanceCap: 2
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_DEV}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+          - name: "docker-staging"
+            labelString: "docker-staging"
+            mode: EXCLUSIVE
+            instanceCap: 2
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_STAGING}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"
+          - name: "docker-prod"
+            labelString: "docker-prod"
+            mode: EXCLUSIVE
+            instanceCap: 1
+            remoteFs: "/home/jenkins/agent"
+            pullStrategy: PULL_LATEST
+            pullTimeout: 300
+            dockerTemplateBase:
+              image: "${AGENT_IMAGE_PROD}"
+              memoryLimit: 2048
+              cpus: "1.0"
+            connector:
+              jnlp:
+                jenkinsUrl: "${JENKINS_URL}"

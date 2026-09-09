@@ -13,27 +13,29 @@ alternatives: `topologies.md`; rules and conventions: `jenkins-multi-env` skill.
 
 ## Phase 1 — Jenkins controller (master)
 
-- [ ] Choose controller OS/host and record ADR (placement, backups)
-- [ ] Stand up controller; install plugins (`plugins.txt`), JCasC `jenkins.yaml`
-- [ ] Base `jenkins/` layout in repo (JCasC + seed jobs as code)
-- **Acceptance:** fresh controller boots fully provisioned from the repo with
-  no click-ops; UI reachable over TLS; login restricted to admins.
+- [x] Choose controller OS/host and record ADR (placement, backups) — *implementation written; boot verification pending*
+- [x] Stand up controller; install plugins (`plugins.txt`), JCasC `jenkins.yaml` — *files under `jenkins/controller/`; not yet booted*
+- [x] Base `jenkins/` layout in repo (JCasC + seed jobs as code)
+- **Acceptance (unverified — run `jenkins/dev-harness` compose):** fresh
+  controller boots fully provisioned from the repo with no click-ops; UI
+  reachable over TLS; login restricted to admins.
 
 ## Phase 2 — Docker hosts (the 2 workers)
 
-- [ ] Provision Docker Host A and Host B; register as Jenkins nodes
-- [ ] Node labels + connectivity verified; agent connection documented
-- [ ] Resource limits / cleanup (cron prune of stale containers)
-- **Acceptance:** controller shows both hosts online; a smoke "echo" job runs
-  on either host via a `docker-build` container and leaves no residue.
+- [x] Provision Docker Host A and Host B; register as Jenkins nodes — *script + JCasC clouds written; not yet executed*
+- [x] Node labels + connectivity verified; agent connection documented
+- [x] Resource limits / cleanup (cron prune of stale containers) — *`prune-agent-containers.sh` + daemon.json limits*
+- **Acceptance (unverified):** controller shows both hosts online; a smoke
+  "echo" job runs on either host via a `docker-build` container and leaves no
+  residue.
 
 ## Phase 3 — Ephemeral agent templates (3 envs)
 
-- [ ] Templates: `docker-build`, `docker-dev`, `docker-staging`, `docker-prod`
-- [ ] Env-scoped credential sets (registry + per-env deploy creds)
-- [ ] Agent image(s) maintained in repo (Dockerfile per tool set)
-- **Acceptance:** a labeled job runs inside a fresh container per env; dev
-  credentials are not visible to prod-labeled jobs.
+- [x] Templates: `docker-build`, `docker-dev`, `docker-staging`, `docker-prod` — *defined per cloud in `casc/clouds.yaml`*
+- [x] Env-scoped credential sets (registry + per-env deploy creds) — *`casc/credentials.yaml`, env-injected*
+- [x] Agent image(s) maintained in repo (Dockerfile per tool set) — *`jenkins/agents/tool-build`, `tool-deploy`*
+- **Acceptance (unverified):** a labeled job runs inside a fresh container per
+  env; dev credentials are not visible to prod-labeled jobs.
 
 ## Phase 4 — Pipeline & env-gated promotion
 

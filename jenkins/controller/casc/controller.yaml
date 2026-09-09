@@ -1,0 +1,15 @@
+# Jenkins controller core settings.
+# Roots across the casc/*.yaml files are deep-merged by JCasC.
+jenkins:
+  numExecutors: 0
+  mode: EXCLUSIVE
+  quietPeriod: 5
+  scmCheckoutRetryCount: 3
+
+# Public-facing URL; env-injected so each environment / proxy stays correct.
+unclassified:
+  location:
+    url: "${JENKINS_URL}"
+  timestamper:
+    allPipelines: true
+    elapsedTimeFormat: "'<b>'HH:mm:ss'</b> '"

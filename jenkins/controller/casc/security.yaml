@@ -1,0 +1,34 @@
+# Security: local realm + strict matrix authorization.
+# Passwords come from the environment at boot; never commit real secrets.
+security:
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "Overall/Administer:admin"
+        - "Overall/Read:authenticated"
+        - "Overall/Read:anonymous"
+        - "Job/Read:authenticated"
+        - "Job/Discover:authenticated"
+        - "View/Read:authenticated"
+        - "View/Configure:admin"
+        - "Credentials/View:admin"
+        - "Credentials/Create:admin"
+        - "Credentials/Update:admin"
+        - "Credentials/Delete:admin"
+        - "Run/Update:authenticated"
+        - "Agent/Build:authenticated"
+        - "Agent/Connect:authenticated"
+        - "Agent/Disconnect:admin"
+  securityRealm:
+    local:
+      allowsSignup: false
+      enableCaptcha: false
+      users:
+        - id: "admin"
+          name: "Jenkins Admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+unclassified:
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true

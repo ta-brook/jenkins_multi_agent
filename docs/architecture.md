@@ -84,7 +84,11 @@ New decisions are appended to the ADR log in section 6 below.
 | Date | Decision | Context |
 |---|---|---|
 | 2026-09-09 | Baseline: Docker ephemeral agents + 1 controller + 2 Docker hosts, 3 env-labeled templates (dev/staging/prod) | User spec: 1 master, 2–3 workers, multi-env; user selected Docker ephemeral agents and a 2-worker/3-env model. Alternatives in `topologies.md`. |
+| 2026-09-09 | Controller image: official `jenkins/jenkins:lts` (JDK 21); plugins pinned in `jenkins/controller/plugins.txt` via `jenkins-plugin-cli`; JCasC from `jenkins/controller/casc/*.yaml` | Phase 1; everything reproducible from repo, no click-ops. Versions pinned 2026-09-09 against the official updates.jenkins.io plugin list. |
+| 2026-09-09 | "Workers" = two Docker-plugin clouds (`docker-host-a`/`docker-host-b`), one per always-on Docker host; both clouds carry the same 4 env-labeled templates (`docker-build/dev/staging/prod`) | Phase 2/3; this resolves the ambiguous skill example — cloud-per-host (not controller node-per-host) is the Method-4 baseline: the controller provisions ephemeral containers on each host by label. |
+| 2026-09-09 | Env boundary is the template label; credential isolation is per env ID (`registry-*`, `deploy-*`), values env-injected | Phase 3; prod credentials exist as separate IDs and are never bound to dev/staging-labeled jobs. |
+| 2026-09-09 | Docker hosts speak TLS on TCP 2376 in production (`docker-host.sh`), plain 2375 only in the local `dev-harness` compose stack | Phase 2; host provisioning is a repo script; harness is local-only. |
 
-Future ADRs to record here: controller OS/placement choice, registry choice,
-plugin version pin strategy, backup schedule, and any move toward static
-agents / K8s / per-env controllers.
+Remaining future ADRs: registry choice (provider + URL), deploy target/port per
+env (deferred to Phase 4+), backup schedule/restore drill (Phase 5), any move
+toward static agents / K8s / per-env controllers.

@@ -1,0 +1,25 @@
+# Seed jobs created by JCasC via Job DSL on first boot.
+# The top-level pipeline job expects a Jenkinsfile in the SCM repo (Phase 4);
+# until that file exists the job will fail on first build, by design.
+jobs:
+  - script: >
+      pipelineJob('jenkins_multi_agent-main') {
+        description('Top-level multi-env pipeline: build once, promote dev -> staging -> prod.')
+        logRotator(-1, 20, -1, 5)
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('${GIT_REPO_URL}')
+                }
+                branches('*/main')
+                extensions {
+                  cleanBeforeCheckout()
+                }
+              }
+            }
+            lightweight(true)
+          }
+        }
+      }
