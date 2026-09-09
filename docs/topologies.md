@@ -97,6 +97,21 @@ Run everything on the controller's built-in node. No separate workers.
                  envs = just different jobs
 ```
 
+```mermaid
+flowchart TD
+    C["Jenkins Controller<br/>(single host)"]:::ctrl
+    C -->|"agent { label 'master' }"| B["built-in node<br/>label: master"]:::node
+    B --- R1["job dev"]:::dev
+    B --- R2["job staging"]:::staging
+    B --- R3["job prod"]:::prod
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef node fill:#eceff1,color:#263238,stroke:#90a4ae,stroke-width:2px
+    classDef dev fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef staging fill:#fff3cd,stroke:#f9a825,stroke-width:2px
+    classDef prod fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+```
+
 - **Pros:** zero extra infra; simplest possible.
 - **Cons:** no isolation, no scaling, heavy builds and CI/UI compete for one
   machine; Jenkins recommends against running real workloads on the controller.
@@ -128,6 +143,25 @@ Controller keeps a fixed list of worker VMs and connects over SSH.
       pipeline: agent { label 'linux prod' }  -> runs on worker-prod
 ```
 
+```mermaid
+flowchart LR
+    C["Jenkins Controller<br/>(master)"]:::ctrl
+    C == "SSH" ==> D["worker-dev<br/>labels: linux dev"]:::dev
+    C == "SSH" ==> S["worker-staging<br/>labels: linux staging"]:::staging
+    C == "SSH" ==> P["worker-prod<br/>labels: linux prod"]:::prod
+
+    subgraph LEGEND["worker = env"]
+        D
+        S
+        P
+    end
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef dev fill:#c8e6c9,color:#1b5e20,stroke:#2e7d32,stroke-width:2px
+    classDef staging fill:#fff3cd,color:#795548,stroke:#f9a825,stroke-width:2px
+    classDef prod fill:#ffcdd2,color:#b71c1c,stroke:#c62828,stroke-width:2px
+```
+
 - **Pros:** simple and predictable; fixed capacity; full control of the worker
   OS; good for heavy native/stateful builds; worker = env gives clean mental
   model and credential segregation.
@@ -156,7 +190,18 @@ Windows service or via SSH/agent), for cross-platform builds.
                                      │  service  ┌──────►│ worker-windows   │
                                      │          │       │ labels: windows   │
                                      │          │       └───────────────────┘
-                                     └──────────┘   e.g. MSVC / .NET only
+                                      └──────────┘   e.g. MSVC / .NET only
+```
+
+```mermaid
+flowchart LR
+    C["Jenkins Controller"]:::ctrl
+    C == "SSH" ==> L["worker-linux (VM)<br/>labels: linux build dev"]:::dev
+    L -.->|"same host fleet"| W["worker-windows (VM)<br/>labels: windows<br/>MSVC / .NET only"]:::win
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef dev fill:#c8e6c9,color:#1b5e20,stroke:#2e7d32,stroke-width:2px
+    classDef win fill:#b3e5fc,color:#01579b,stroke:#0288d1,stroke-width:2px
 ```
 
 - **Pros:** cross-platform compile/test on the same controller; matches a
@@ -198,6 +243,30 @@ job, then destroys it. Environments are modeled as **labeled agent templates**.
       ephemeral containers, clean per run (dev / staging / prod)
 ```
 
+```mermaid
+flowchart TD
+    C["Jenkins Controller<br/>(JCasC, master)"]:::ctrl
+    C -->|"inbound agent connection"| H
+
+    subgraph H["WORKER NODES = Docker hosts"]
+        direction LR
+        A["Docker Host A<br/>(worker-1)"]:::host
+        B["Docker Host B<br/>(worker-2)"]:::host
+    end
+
+    A -->|"spawn ephemeral containers"| DEV["dev agent<br/>label: docker-dev"]:::dev
+    A --> STG["staging agent<br/>label: docker-staging"]:::staging
+    B --> PRD["prod agent<br/>label: docker-prod"]:::prod
+    B --> TST["tool/test agent<br/>label: docker-build"]:::build
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef host fill:#e1c7f7,color:#4a148c,stroke:#6a1b9a,stroke-width:2px
+    classDef dev fill:#c8e6c9,color:#1b5e20,stroke:#2e7d32,stroke-width:2px
+    classDef staging fill:#fff3cd,color:#795548,stroke:#f9a825,stroke-width:2px
+    classDef prod fill:#ffcdd2,color:#b71c1c,stroke:#c62828,stroke-width:2px
+    classDef build fill:#eceff1,color:#263238,stroke:#90a4ae,stroke-width:2px
+```
+
 - **Pros:** clean reproducible env every run; cheap parallelism; no leftover
   state; fleet = the two hosts, templates = the env boundary.
 - **Cons:** container overhead; image upkeep; Docker-in-Docker pain; stateless
@@ -225,7 +294,32 @@ usually one pod per environment namespace.
    │  │ pod (dev deploy│  │ (deploy stage) │  │ (deploy)  │ │
    │  └────────────────┘  └────────────────┘  └───────────┘ │
    └────────────────────────────────────────────────────────┘
-   pipeline: agent { kubernetes { label 'ci-build' } }
+    pipeline: agent { kubernetes { label 'ci-build' } }
+```
+
+```mermaid
+flowchart TD
+    C["Jenkins Controller"]:::ctrl
+    C -->|"k8s API - agent pod per job"| K
+
+    subgraph K["Kubernetes cluster"]
+        subgraph NCI["ns: ci"]
+            PB["pod (build)"]:::build
+            PD["pod (dev deploy)"]:::dev
+        end
+        subgraph NSTG["ns: staging"]
+            PS["pod (deploy staging)"]:::staging
+        end
+        subgraph NPRD["ns: prod"]
+            PP["pod (deploy prod)"]:::prod
+        end
+    end
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef build fill:#eceff1,color:#263238,stroke:#90a4ae,stroke-width:2px
+    classDef dev fill:#c8e6c9,color:#1b5e20,stroke:#2e7d32,stroke-width:2px
+    classDef staging fill:#fff3cd,color:#795548,stroke:#f9a825,stroke-width:2px
+    classDef prod fill:#ffcdd2,color:#b71c1c,stroke:#c62828,stroke-width:2px
 ```
 
 - **Pros:** elastic scale-to-zero; per-env namespaces give strong isolation;
@@ -252,7 +346,34 @@ no sharing of state or credentials at all.
    │  docker)    │   │              │  │              │
    └─────────────┘   └──────────────┘  └──────────────┘
    app promoted: build image once -> push to registry -> each controller
-   deploys the same digest into its own environment
+    deploys the same digest into its own environment
+```
+
+```mermaid
+flowchart TD
+    subgraph DEVCTRL["Jenkins dev"]
+        CD["controller"]:::dev
+        CD --> WD["dev workers"]:::dev
+    end
+    subgraph STGCTRL["Jenkins staging"]
+        CS["controller"]:::staging
+        CS --> WS["staging workers"]:::staging
+    end
+    subgraph PRDCTRL["Jenkins prod"]
+        CP["controller"]:::prod
+        CP --> WP["prod workers"]:::prod
+    end
+
+    REG["registry - one immutable digest"]:::reg
+
+    REG --> CD
+    REG --> CS
+    REG --> CP
+
+    classDef dev fill:#c8e6c9,color:#1b5e20,stroke:#2e7d32,stroke-width:2px
+    classDef staging fill:#fff3cd,color:#795548,stroke:#f9a825,stroke-width:2px
+    classDef prod fill:#ffcdd2,color:#b71c1c,stroke:#c62828,stroke-width:2px
+    classDef reg fill:#e1c7f7,color:#4a148c,stroke:#6a1b9a,stroke-width:2px
 ```
 
 - **Pros:** strongest isolation (blast radius, credentials, config); good for
@@ -281,6 +402,25 @@ VM agents, AWS ECS/GKE tasks) instead of self-managed hosts.
    │   │ dev/stage│   │ staging  │   │ prod │ │     for jobs, torn down
    │   └──────────┘   └──────────┘   └──────┘ │     when idle
    └──────────────────────────────────────────┘
+```
+
+```mermaid
+flowchart LR
+    C["Jenkins Controller"]:::ctrl
+    C -->|"cloud plugin / webhook"| CP
+
+    subgraph CP["Cloud provider - EC2 / VM / ECS"]
+        A["agent A<br/>dev / staging"]:::dev
+        B["agent B<br/>staging"]:::staging
+        CC["agent C<br/>prod"]:::prod
+    end
+
+    A ~~~ B ~~~ CC
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef dev fill:#c8e6c9,color:#1b5e20,stroke:#2e7d32,stroke-width:2px
+    classDef staging fill:#fff3cd,color:#795548,stroke:#f9a825,stroke-width:2px
+    classDef prod fill:#ffcdd2,color:#b71c1c,stroke:#c62828,stroke-width:2px
 ```
 
 - **Pros:** pay only for what you use; elastic scale with zero idle fleet;
