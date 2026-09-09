@@ -18,6 +18,65 @@ Quick reference:
 | 6 | Controller per environment | each env has its own fleet | hard (separate controllers) | high |
 | 7 | Serverless / cloud-native agents | spawned by cloud (AWS/Azure/GCP) | label per env | med–high |
 
+## Full overview (colored)
+
+One picture of every worker model feeding the same multi-env idea. Green boxes
+run on the controller, purple boxes are self-hosted worker fleets, blue boxes
+are on-demand/cloud-provisioned, and the bottom row shows the three possible
+places the env boundary can live.
+
+```mermaid
+flowchart TD
+    %% ─── one controller, however workers are made ───
+    C(["Jenkins Controller<br/>(master, JCasC)"]):::ctrl
+
+    C -- "all jobs here (1)" --> M1["Built-in node<br/>label: master"]:::builtin
+    C -- "SSH (2,3)" --> SSH["Static VM fleet<br/>SSH / WinRM"]:::static
+    C -- "agent channel (4)" --> DKR["2× Docker hosts<br/>spawn per-job containers"]:::docker
+    C -- "k8s API (5)" --> K8S["Kubernetes cluster<br/>pod agent per job"]:::cloud
+    C -- "N controllers (6)" --> PER["Controller per env<br/>dev / staging / prod"]:::perenv
+    C -- "cloud plugin (7)" --> CLD["AWS / Azure / GCP<br/>agents on demand"]:::cloud
+
+    subgraph WORKERS [" "]
+        M1
+        SSH
+        DKR
+        K8S
+        PER
+        CLD
+    end
+
+    %% ─── every method lands on a logical env model ───
+    SSH -- "labels on nodes" --> A
+    DKR -- "labeled templates" --> A
+    DKR -- "templates = env boundary" --> C
+    K8S -- "namespace per env" --> C
+    K8S -- "labels" --> A
+    CLD -- "label per env" --> A
+    M1 -- "labels on one node" --> A
+    PER -.->|"own env baked in"| B
+
+    subgraph ENV ["where the env boundary lives"]
+        A["Model A — single controller + env labels"]:::envA
+        B["Model B — controller per env"]:::envB
+        C["Model C — dynamic env agents"]:::envC
+    end
+
+    classDef ctrl fill:#2f3b52,color:#ffffff,stroke:#1b2433,stroke-width:2px
+    classDef builtin fill:#b8f0c0,stroke:#2e7d32,stroke-width:2px
+    classDef static fill:#e1c7f7,stroke:#6a1b9a,stroke-width:2px
+    classDef docker fill:#fff3cd,stroke:#b8860b,stroke-width:2px
+    classDef perenv fill:#ffd3d3,stroke:#c62828,stroke-width:2px
+    classDef cloud fill:#b3e0ff,stroke:#01579b,stroke-width:2px
+    classDef envA fill:#e8f5e9,color:#1b5e20,stroke:#388e3c
+    classDef envB fill:#ffebee,color:#b71c1c,stroke:#e53935
+    classDef envC fill:#e3f2fd,color:#0d47a1,stroke:#1e88e5
+```
+
+Legend: 1=controller node, 2=static SSH Linux, 3=static mixed OS,
+4=Docker ephemeral (baseline), 5=Kubernetes, 6=controller per env,
+7=cloud/serverless.
+
 ---
 
 ## Method 1 — Controller built-in node (single machine)
