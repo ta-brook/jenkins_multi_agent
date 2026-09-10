@@ -9,6 +9,7 @@ promoted dev -> staging -> prod, with a manual approval gate before production.
 
 - `docs/architecture.md` — baseline topology, components, runtime flow, ADR log
 - `docs/roadmap.md` — phase-by-phase buildout status and acceptance criteria
+- `docs/testing.md` — hands-on, copy-paste "test in action" walkthrough
 - `docs/topologies.md` — the full menu of worker/multi-env models with diagrams
 - `.opencode/skills/jenkins-multi-env/SKILL.md` — conventions agents must follow
 
