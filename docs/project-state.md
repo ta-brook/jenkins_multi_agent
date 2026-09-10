@@ -2,7 +2,7 @@
 
 Snapshot for resuming `jenkins_multi_agent` later.
 
-- **Saved at commit:** `0906449` + Phase 5/6 verification commit (see `git log`)
+- **Saved at commit:** `350e27e` (includes verification commits `0906449`, `df80a2b`, and the testing guide)
 - **Working tree:** clean
 - **Date:** 2026-09-10
 
@@ -21,7 +21,7 @@ Snapshot for resuming `jenkins_multi_agent` later.
 | Local harness | `jenkins/dev-harness/docker-compose.yml`, `.env.example` | controller + 2 DinD hosts (unix socket exposed) + registry; fixed controller IP `172.31.0.10`; `.env` + `https/` gitignored |
 | Security/ops scripts | `jenkins/security/*.sh` | keystore, docker TLS, backup/restore, plugin refresh |
 | Sample app | `apps/sample-app/` | FastAPI `/health` echoes `APP_ENV`; pytest passes inside the image build |
-| Docs | `docs/architecture.md`, `docs/roadmap.md`, `docs/topologies.md`, `README.md` | all Phase 1–6 acceptances marked verified |
+| Docs | `docs/architecture.md`, `docs/roadmap.md`, `docs/topologies.md`, `docs/testing.md`, `README.md` | all Phase 1–6 acceptances marked verified; `testing.md` is a hands-on "test in action" walkthrough |
 | Conventions | `AGENTS.md`, `.opencode/` | commit+push per task; agents/skill define team model |
 
 ## Verification results (2026-09-10, Docker Desktop 29.7.2, 8 GB / 12 CPU)
@@ -46,14 +46,15 @@ Snapshot for resuming `jenkins_multi_agent` later.
 
 ## How to continue later
 
-1. Pull repo; state = verified Phase 0–6 (see `git log`).
+1. Pull repo; state = verified Phase 0–6 at `350e27e` (see `git log`).
 2. Harness: `cd jenkins/dev-harness && cp .env.example .env` (fill
    `GIT_REPO_URL` + strong `JENKINS_ADMIN_PASSWORD`; optionally enable HTTPS in
    `JENKINS_OPTS`), `docker compose up -d --build`,
    `docker build -t localhost:5000/jenkins-multi-agent/tool-build:latest ../agents/tool-build` (+ tool-deploy), push both.
-3. http://localhost:8080 admin login; run `smoke-docker-build`, then
-   `jenkins_multi_agent-main` (default `TARGET_ENV=prod`; approve the input via
-   the UI or the REST `proceedEmpty` endpoint).
+3. Follow `docs/testing.md` for the hands-on walkthrough: login, run
+   `smoke-docker-build`, then `jenkins_multi_agent-main` (default
+   `TARGET_ENV=prod`; approve the input via the UI or the REST `proceedEmpty`
+   endpoint).
 4. Real hosts/prod: swap the DinD hosts for `docker-host.sh` workers (TLS 2376),
    point the registry/deploy targets at real infra, and wire a real webhook.
 
