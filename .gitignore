@@ -4,3 +4,9 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# Local secrets / generated material — never commit
+.env
+jenkins/dev-harness/.env
+jenkins/dev-harness/https/*
+!jenkins/dev-harness/https/.gitkeep

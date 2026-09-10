@@ -1,6 +1,6 @@
 # Security: local realm + strict matrix authorization.
 # Passwords come from the environment at boot; never commit real secrets.
-security:
+jenkins:
   authorizationStrategy:
     globalMatrix:
       permissions:
@@ -27,8 +27,5 @@ security:
         - id: "admin"
           name: "Jenkins Admin"
           password: "${JENKINS_ADMIN_PASSWORD}"
-
-unclassified:
   crumbIssuer:
-    standard:
-      excludeClientIPFromCrumb: true
+    standard: {}

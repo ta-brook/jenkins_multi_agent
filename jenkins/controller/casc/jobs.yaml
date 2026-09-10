@@ -29,20 +29,10 @@ jobs:
         }
       }
   - script: |
-      pipelineJob('smoke-docker-build') {
+      freeStyleJob('smoke-docker-build') {
         description('Smoke test: runs on an ephemeral docker-build agent and cleans up after itself.')
-        definition {
-          cps {
-            script('''
-              pipeline {
-                agent { label 'docker-build' }
-                stages {
-                  stage('Smoke') {
-                    steps { sh 'echo "smoke ok on \$(hostname)"' }
-                  }
-                }
-              }
-            '''.stripIndent())
-          }
+        label('docker-build')
+        steps {
+          shell('echo "smoke ok on $(hostname)" && docker info >/dev/null && echo "docker socket reachable"')
         }
       }

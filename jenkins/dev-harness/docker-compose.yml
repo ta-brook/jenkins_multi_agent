@@ -20,7 +20,12 @@ services:
     container_name: jenkins-controller
     environment:
       CASC_JENKINS_CONFIG: /var/jenkins_home/casc
+      # Public URL used for the controller's location.url (browser-facing).
       JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
+      # Internal URL agent containers use to call back. Agent containers are
+      # spawned on the DinD hosts, where "localhost"/"controller" do not
+      # resolve; the controller's fixed compose-network IP does.
+      JENKINS_AGENT_URL: ${JENKINS_AGENT_URL:-http://172.31.0.10:8080}
       JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:-admin}
       # Optional HTTPS. See ../security/gen-controller-keystore.sh. Example:
       # JENKINS_OPTS="--httpsPort=8443 --httpsKeyStore=/var/jenkins_home/https/keystore.p12 --httpsKeyStorePassword=..."
@@ -57,6 +62,9 @@ services:
       - docker-host-a
       - docker-host-b
       - registry
+    networks:
+      default:
+        ipv4_address: 172.31.0.10
 
   docker-host-a:
     image: docker:dind
@@ -66,6 +74,7 @@ services:
       DOCKER_TLS_CERTDIR: ""
     command:
       - dockerd
+      - --host=unix:///var/run/docker.sock
       - --host=tcp://0.0.0.0:2375
       - --insecure-registry=registry:5000
     volumes:
@@ -81,6 +90,7 @@ services:
       DOCKER_TLS_CERTDIR: ""
     command:
       - dockerd
+      - --host=unix:///var/run/docker.sock
       - --host=tcp://0.0.0.0:2375
       - --insecure-registry=registry:5000
     volumes:
@@ -93,3 +103,12 @@ volumes:
   host-a-data:
   host-b-data:
   registry-data:
+
+# Fixed subnet so the controller has a stable internal IP (172.31.0.10) that
+# agent containers spawned on the DinD hosts can reach via NAT/forwarding.
+networks:
+  default:
+    name: jenkins-multi-agent
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24

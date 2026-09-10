@@ -65,8 +65,8 @@ pipeline {
               passwordVariable: 'REG_PASS')]) {
             sh """
               set -eu
-              if [ -n "\$REG_USER" ]; then
-                echo "\$REG_PASS" | docker login "${env.REGISTRY_HOST}" -u "\$REG_USER" --password-stdin
+              if [ -n "\${REG_USER:-}" ]; then
+                echo "\${REG_PASS:-}" | docker login "${env.REGISTRY_HOST}" -u "\$REG_USER" --password-stdin
               fi
               docker build -t "${env.IMAGE_TAG}" .
               docker push "${env.IMAGE_TAG}"
@@ -102,7 +102,13 @@ pipeline {
 
   post {
     always {
-      cleanWs()
+      script {
+        try {
+          node('docker-build') { cleanWs() }
+        } catch (e) {
+          echo "workspace cleanup skipped: ${e}"
+        }
+      }
     }
   }
 }
@@ -116,11 +122,11 @@ def deploy(String envName, String registryCred, String deployCred) {
       string(credentialsId: deployCred, variable: 'DEPLOY_TOKEN')]) {
     sh """
       set -eu
-      if [ -n "\$REG_USER" ]; then
-        echo "\$REG_PASS" | docker login "${env.REGISTRY_HOST}" -u "\$REG_USER" --password-stdin
+      if [ -n "\${REG_USER:-}" ]; then
+        echo "\${REG_PASS:-}" | docker login "${env.REGISTRY_HOST}" -u "\$REG_USER" --password-stdin
       fi
       docker pull "${env.IMAGE_TAG}"
-      CID=\$(docker run -d -e APP_ENV=${envName} -e DEPLOY_TOKEN="\$DEPLOY_TOKEN" "${env.IMAGE_TAG}")
+      CID=\$(docker run -d -e APP_ENV=${envName} -e DEPLOY_TOKEN="\${DEPLOY_TOKEN:-}" "${env.IMAGE_TAG}")
       trap 'docker rm -f "\$CID" >/dev/null 2>&1 || true' EXIT
       CONTAINER_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "\$CID" | awk '{print \$1}')
       for i in \$(seq 1 30); do
