@@ -6,6 +6,14 @@ jobs:
       pipelineJob('jenkins_multi_agent-main') {
         description('Top-level multi-env pipeline: build once, promote dev -> staging -> prod.')
         logRotator(-1, 20, -1, 5)
+        // Parameters defined in the seed so the job is parameterized even on
+        // the first SCM-triggered build (before the Jenkinsfile is loaded and
+        // the pipeline's own parameters block is registered).
+        parameters {
+          stringParam('REGISTRY_HOST', 'registry:5000', 'Registry host:port images are pushed to / pulled from.')
+          stringParam('IMAGE_REPO', 'jenkins-multi-agent/sample-app', 'Image repository name under REGISTRY_HOST.')
+          stringParam('TARGET_ENV', 'prod', 'Highest environment to promote to: dev | staging | prod')
+        }
         definition {
           cpsScm {
             scm {

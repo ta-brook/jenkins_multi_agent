@@ -23,6 +23,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_TOOL_BUILD}"
               user: "root"
@@ -40,6 +42,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_DEV}"
               user: "root"
@@ -57,6 +61,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_STAGING}"
               user: "root"
@@ -74,6 +80,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_PROD}"
               user: "root"
@@ -102,6 +110,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_TOOL_BUILD}"
               user: "root"
@@ -119,6 +129,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_DEV}"
               user: "root"
@@ -136,6 +148,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_STAGING}"
               user: "root"
@@ -153,6 +167,8 @@ jenkins:
             remoteFs: "/home/jenkins/agent"
             pullStrategy: PULL_LATEST
             pullTimeout: 300
+            retentionStrategy:
+              idleMinutes: 1
             dockerTemplateBase:
               image: "${AGENT_IMAGE_PROD}"
               user: "root"

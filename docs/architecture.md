@@ -93,8 +93,13 @@ New decisions are appended to the ADR log in section 6 below.
 | 2026-09-09 | Local `dev-harness` includes an insecure `registry:5000` service and both DinD hosts trust it; `REGISTRY_HOST` env points images at it | Phase 4; the same image digest then flows dev->staging->prod. Production registry choice still open. |
 | 2026-09-09 | `apps/sample-app` = FastAPI with `/health` echoing `APP_ENV`; multi-stage Dockerfile runs tests in the builder then copies only runtime deps | Phase 6; env-aware seam so one image runs identically per env, verifiable via the health endpoint. |
 | 2026-09-09 | Security & ops scripts under `jenkins/security/`: HTTPS keystore gen, Docker-TLS client/server certs, `$JENKINS_HOME` backup/restore, plugin-pin refresh | Phase 5; backups/restore drill + upgrade policy live as repo scripts and ADRs until acceptance is verified. |
+| 2026-09-10 | Agent JNLP callback uses a separate `JENKINS_AGENT_URL` (controller's fixed compose-network IP `172.31.0.10:8080`), distinct from the browser-facing `JENKINS_URL` | Verified in the harness: agent containers are spawned on the DinD hosts where `localhost`/`controller` do not resolve; the controller gets a static IP on a pinned subnet so agents can reach it via NAT/forwarding. |
+| 2026-09-10 | DinD harness hosts listen on both the unix socket and TCP 2375 | Verified: the docker-plugin templates bind-mount `/var/run/docker.sock`; without the unix socket inside the DinD host the mount (and every agent) fails to start. |
+| 2026-09-10 | Controller image seeds the Jenkins install state to `RUNNING` (`/usr/share/jenkins/ref/installState`) | Verified: the install-state check runs before JCasC sets the security realm, so on a fresh boot it otherwise falls into `InitialSecuritySetup` → `SetupWizard.init()` which downloads the update center and can block boot forever on a slow network. The seed eliminates the setup wizard entirely. |
+| 2026-09-10 | Agent templates use `retentionStrategy` DockerOnce with `idleMinutes: 1` | Verified: the plugin normalizes `0` to the default `10`; `1` reclaims each container ~1 minute after a run so hosts stay clean. `prune-agent-containers.sh` remains the safety net for exited containers. |
+| 2026-09-10 | Seed job defines the pipeline parameters (`REGISTRY_HOST`, `IMAGE_REPO`, `TARGET_ENV`) | Verified: JCasC re-applies the job config on each boot, wiping Jenkinsfile-registered parameters; seed-level params keep the job parameterized (and SCM-triggered builds sane) from the first build. |
 
 Remaining future ADRs: registry provider/URL (production), real deploy target
 per env (replace the smoke-deploy in the Jenkinsfile), backup schedule/restore
-drill sign-off (Phase 5), any move toward static agents / K8s / per-env
-controllers.
+drill sign-off for production (harness drill done), a live webhook, any move
+toward static agents / K8s / per-env controllers.
